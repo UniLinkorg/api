@@ -1,5 +1,11 @@
-import type { BaseRoute } from "../../types";
+import {
+	ErrorsCodes,
+	ErrorsMessages,
+	StatusCodes,
+	type BaseRoute,
+} from "../../types";
 import * as jwt from "jsonwebtoken";
+import makeError from "../../utils/makeError";
 
 const SEVEN_DAYS_IN_SECONDS = 604800;
 
@@ -8,10 +14,10 @@ const route: BaseRoute = {
 	run: async (req, res) => {
 		const { code } = req.query_parameters;
 
-		// if (!code)
-		// 	return res
-		// 		.status(StatusCodes.BAD_REQUEST)
-		// 		.json(makeError(ErrorCodes.MissingAuthCode));
+		if (!code)
+			return res
+				.status(StatusCodes.BAD_REQUEST)
+				.json(makeError(ErrorsCodes.MISSING_CODE, ErrorsMessages.MISSING_CODE));
 
 		const {
 			SCOPES,
@@ -44,7 +50,10 @@ const route: BaseRoute = {
 		);
 		const { access_token, error } = await tokenRequest.json();
 
-		if (error === "invalid_grant") return res.redirect(<string>AUTH_LINK);
+		if (error === "invalid_grant")
+			return res
+				.status(StatusCodes.UNAUTHORIZED)
+				.json(makeError(ErrorsCodes.INVALID_CODE, ErrorsMessages.INVALID_CODE));
 
 		const userRequest = await fetch("https://discord.com/api/v10/users/@me", {
 			headers: {
