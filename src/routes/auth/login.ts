@@ -6,7 +6,7 @@ const route: BaseRoute = {
 		const { DISCORD_URL } = process.env;
 
 		return res.redirect(<string>DISCORD_URL);
-	},
+	}
 };
 
 export default route;
