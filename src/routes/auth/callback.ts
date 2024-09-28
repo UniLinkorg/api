@@ -2,10 +2,11 @@ import {
 	ErrorsCodes,
 	ErrorsMessages,
 	StatusCodes,
-	type BaseRoute,
+	type BaseRoute
 } from "../../types";
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import makeError from "../../utils/makeError";
+import { users } from "../../models/user.model";
 
 const SEVEN_DAYS_IN_SECONDS = 604800;
 
@@ -24,9 +25,8 @@ const route: BaseRoute = {
 			REDIRECT_URI,
 			CLIENT_SECRET,
 			CLIENT_ID,
-			AUTH_LINK,
 			JWT_SECRET,
-			REDIRECT_AUTH,
+			REDIRECT_AUTH
 		} = process.env;
 
 		const body = {
@@ -35,52 +35,71 @@ const route: BaseRoute = {
 			grant_type: "authorization_code",
 			code,
 			redirect_uri: <string>REDIRECT_URI,
-			scope: JSON.parse(<string>SCOPES).join(" "),
+			scope: JSON.parse(<string>SCOPES).join(" ")
 		};
 
-		const tokenRequest = await fetch(
-			"https://discord.com/api/v10/oauth2/token",
-			{
-				method: "POST",
+		try {
+			const tokenRequest = await fetch(
+				"https://discord.com/api/v10/oauth2/token",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/x-www-form-urlencoded"
+					},
+					body: new URLSearchParams(body)
+				}
+			);
+			const { access_token, error } = await tokenRequest.json();
+
+			if (error === "invalid_grant")
+				return res
+					.status(StatusCodes.UNAUTHORIZED)
+					.json(
+						makeError(ErrorsCodes.INVALID_CODE, ErrorsMessages.INVALID_CODE)
+					);
+
+			const userRequest = await fetch("https://discord.com/api/v10/users/@me", {
 				headers: {
-					"Content-Type": "application/x-www-form-urlencoded",
-				},
-				body: new URLSearchParams(body),
-			},
-		);
-		const { access_token, error } = await tokenRequest.json();
+					Authorization: `Bearer ${access_token}`
+				}
+			});
 
-		if (error === "invalid_grant")
+			const { username, id, avatar } = await userRequest.json();
+
+			const token = jwt.sign(
+				{ username, id, avatar, oauth_token: access_token },
+				<string>JWT_SECRET,
+				{
+					expiresIn: SEVEN_DAYS_IN_SECONDS
+				}
+			);
+
+			res.setCookie("user", token, {
+				maxAge: SEVEN_DAYS_IN_SECONDS,
+				sameSite: "lax",
+				httpOnly: false,
+				secure: false,
+				path: "/"
+			});
+
+			await users.findOneAndUpdate(
+				{ _id: id },
+				{ username, avatar },
+				{ new: true, upsert: true }
+			);
+
+			return res.redirect(<string>REDIRECT_AUTH);
+		} catch {
 			return res
-				.status(StatusCodes.UNAUTHORIZED)
-				.json(makeError(ErrorsCodes.INVALID_CODE, ErrorsMessages.INVALID_CODE));
-
-		const userRequest = await fetch("https://discord.com/api/v10/users/@me", {
-			headers: {
-				Authorization: `Bearer ${access_token}`,
-			},
-		});
-
-		const { username, id, avatar } = await userRequest.json();
-
-		const token = jwt.sign(
-			{ username, id, avatar, oauth_token: access_token },
-			<string>JWT_SECRET,
-			{
-				expiresIn: SEVEN_DAYS_IN_SECONDS,
-			},
-		);
-
-		res.setCookie("user", token, {
-			maxAge: SEVEN_DAYS_IN_SECONDS,
-			sameSite: "lax",
-			httpOnly: false,
-			secure: false,
-			path: "/",
-		});
-
-		return res.redirect(<string>REDIRECT_AUTH);
-	},
+				.status(StatusCodes.INTERNAL_SERVER_ERROR)
+				.json(
+					makeError(
+						ErrorsCodes.INTERNAL_SERVER_ERROR,
+						ErrorsMessages.INTERNAL_SERVER_ERROR
+					)
+				);
+		}
+	}
 };
 
 export default route;
