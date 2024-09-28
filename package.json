@@ -4,8 +4,8 @@
     "description": "a api for unilink",
     "type": "module",
     "scripts": {
-        "start": "node dist/index.js",
-        "dev": "tsx --watch src/index.ts",
+        "start": "node dist/index.js --env-file .env.production",
+        "dev": "tsx --watch src/index.ts --env-file .env",
         "build": "tsc"
     },
     "repository": {
