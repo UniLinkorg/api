@@ -2,12 +2,10 @@ import type { Request, Response } from "hyper-express";
 
 export type RequestMethod = "get" | "post" | "put" | "delete" | "patch";
 
-export type RouteFn = (req: Request, res: Response) => void;
-
 export interface BaseRoute {
 	route: string;
 	method?: RequestMethod;
-	run: RouteFn;
+	run: (req: Request, res: Response) => void;
 }
 
 export enum StatusCodes {
@@ -25,10 +23,18 @@ export enum StatusCodes {
 
 export enum ErrorsMessages {
 	MISSING_CODE = "Missing auth code parameter",
-	INVALID_CODE = "Invalid auth code",	
+	INVALID_CODE = "Invalid auth code",
+	INTERNAL_SERVER_ERROR = "Internal server error"
 }
 
 export enum ErrorsCodes {
+	INTERNAL_SERVER_ERROR = 1,
 	MISSING_CODE = 1000,
-	INVALID_CODE = 1001,
+	INVALID_CODE = 1001
+}
+
+export interface UserStructure {
+	_id: string;
+	username: string;
+	avatar: string;
 }
