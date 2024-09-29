@@ -2,6 +2,7 @@ import { Server } from "hyper-express";
 import { config } from "dotenv";
 import loadRoutes from "./utils/loadRoutes";
 import mongoConnect from "./utils/mongoConnect";
+
 config();
 
 const { PORT = 8080 } = process.env;
