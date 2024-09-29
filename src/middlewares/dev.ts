@@ -24,7 +24,7 @@ const devMiddleware = async (
 
 		const decodedUser = <UserStructure>decoded;
 		const isDeveloper = (<string[]>DEVELOPERS_DISCORD_IDS?.split(",")).includes(
-			decodedUser._id
+			decodedUser.id
 		);
 
 		if (!isDeveloper)

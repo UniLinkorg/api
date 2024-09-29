@@ -65,7 +65,7 @@ const route: BaseRoute = {
 			const { username, id, avatar } = await userRequest.json();
 
 			const token = jwt.sign(
-				{ username, _id: id, avatar, oauth_token: access_token },
+				{ username, id, avatar, oauth_token: access_token },
 				<string>JWT_SECRET,
 				{
 					expiresIn: SEVEN_DAYS_IN_SECONDS
@@ -81,7 +81,7 @@ const route: BaseRoute = {
 			});
 
 			await users.updateOne(
-				{ _id: id },
+				{ id: id },
 				{ username, avatar },
 				{ new: true, upsert: true }
 			);

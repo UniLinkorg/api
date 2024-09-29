@@ -40,7 +40,7 @@ export enum ErrorsCodes {
 }
 
 export interface UserStructure {
-	_id: string;
+	id: string;
 	username: string;
 	avatar: string;
 }
