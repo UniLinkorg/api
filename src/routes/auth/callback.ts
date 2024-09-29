@@ -6,7 +6,7 @@ import {
 } from "../../types";
 import jwt from "jsonwebtoken";
 import makeError from "../../utils/makeError";
-import { users } from "../../models/user.model";
+import { users } from "../../models/user";
 
 const SEVEN_DAYS_IN_SECONDS = 604800;
 
@@ -18,7 +18,7 @@ const route: BaseRoute = {
 		if (!code)
 			return res
 				.status(StatusCodes.BAD_REQUEST)
-				.json(makeError(ErrorsCodes.MISSING_CODE, ErrorsMessages.MISSING_CODE));
+				.json(makeError(ErrorsCodes.MISSING_CODE));
 
 		const {
 			SCOPES,
@@ -54,9 +54,7 @@ const route: BaseRoute = {
 			if (error === "invalid_grant")
 				return res
 					.status(StatusCodes.UNAUTHORIZED)
-					.json(
-						makeError(ErrorsCodes.INVALID_CODE, ErrorsMessages.INVALID_CODE)
-					);
+					.json(makeError(ErrorsCodes.INVALID_CODE));
 
 			const userRequest = await fetch("https://discord.com/api/v10/users/@me", {
 				headers: {
@@ -67,7 +65,7 @@ const route: BaseRoute = {
 			const { username, id, avatar } = await userRequest.json();
 
 			const token = jwt.sign(
-				{ username, id, avatar, oauth_token: access_token },
+				{ username, _id: id, avatar, oauth_token: access_token },
 				<string>JWT_SECRET,
 				{
 					expiresIn: SEVEN_DAYS_IN_SECONDS
@@ -82,7 +80,7 @@ const route: BaseRoute = {
 				path: "/"
 			});
 
-			await users.findOneAndUpdate(
+			await users.updateOne(
 				{ _id: id },
 				{ username, avatar },
 				{ new: true, upsert: true }
@@ -92,12 +90,7 @@ const route: BaseRoute = {
 		} catch {
 			return res
 				.status(StatusCodes.INTERNAL_SERVER_ERROR)
-				.json(
-					makeError(
-						ErrorsCodes.INTERNAL_SERVER_ERROR,
-						ErrorsMessages.INTERNAL_SERVER_ERROR
-					)
-				);
+				.json(makeError(ErrorsCodes.INTERNAL_SERVER_ERROR));
 		}
 	}
 };
